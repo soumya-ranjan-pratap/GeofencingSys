@@ -3,13 +3,10 @@ from django.http import JsonResponse
 from .models import CheckInOut
 from datetime import datetime
 from geopy.distance import geodesic
-from django.shortcuts import render
-from django.http import JsonResponse
-from .models import CheckInOut
-from datetime import datetime
+from django.utils.timezone import now
 
 GEOFENCE_COORDS = (20.301176124999998, 85.856136)  # Example coordinates (latitude, longitude)
-GEOFENCE_RADIUS = 0.1  # 200 meters
+GEOFENCE_RADIUS = 0.1  # 100 meters
 
 def index(request):
     return render(request, 'geofencing/index.html')
@@ -32,32 +29,39 @@ def check_geofence(request):
         return JsonResponse({"status": "outside"})
 
 
-
 def record_action(request):
-    try:
-        if request.method == 'POST':
-            # Get the data from the POST request
-            username = request.POST.get('username')
-            action = request.POST.get('action')
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        action = request.POST.get('action')
+        latitude = float(request.POST.get('latitude'))
+        longitude = float(request.POST.get('longitude'))
 
-            # Check if action and username are being received
-            print(f"Received action: {action}, Username: {username}")
+        # Debugging logs
+        print(f"Action: {action}, User: {username}, Latitude: {latitude}, Longitude: {longitude}")
 
-            # Create a record for the CheckInOut model
-            if action == 'check-in':
-                record = CheckInOut(username=username, check_in=datetime.now())
-            elif action == 'check-out':
-                record = CheckInOut(username=username, check_out=datetime.now())
+        if action == 'check-in':
+            # Record check-in
+            check_in = CheckInOut.objects.create(
+                username=username,
+                latitude=latitude,
+                longitude=longitude,
+                check_in=now()
+            )
+            return JsonResponse({'status': 'success', 'message': 'Check-In recorded!', 'id': check_in.id})
+        
+        elif action == 'check-out':
+            # Find the latest Check-In record for the user (without a check-out time)
+            check_out = CheckInOut.objects.filter(username=username, check_out__isnull=True).last()
+            if check_out:
+                check_out.longitude = longitude
+                check_out.latitude = latitude
+                check_out.check_out = now()
+                check_out.save()
+                return JsonResponse({'status': 'success', 'message': 'Check-Out recorded!'})
             else:
-                return JsonResponse({"status": "error", "message": "Invalid action"})
+                return JsonResponse({'status': 'error', 'message': 'No Check-In record found for this user.'})
+        
+        return JsonResponse({'status': 'error', 'message': 'Invalid action.'})
 
-            # Save the record to the database
-            record.save()
-            print(f"Record saved: {record.username} - Check-in: {record.check_in}, Check-out: {record.check_out}")
-
-            return JsonResponse({"status": "success", "message": f"{action} recorded successfully"})
-
-    except Exception as e:
-        print(f"Error in record_action view: {e}")
-        return JsonResponse({"status": "error", "message": f"An error occurred: {e}"})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 

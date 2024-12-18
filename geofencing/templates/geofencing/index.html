@@ -26,15 +26,18 @@
                         <p id="status">Checking location...</p>
                       </div>
       
-                        <h6>Current Date and Time: </h6>
-                        <p id="datetime">Loading...</p>
+                      <h6 style="display: inline;">Current Date and Time: </h6>
+                      <span id="datetime" style="margin-right: 10px;">Loading...</span>
+
+                      
 
                     
 
-                        <div class="text-center pt-1 mb-5 pb-1">
-                            <button data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-block fa-lg gradient-custom-2 mb-3" type="button" id="checkinBtn" disabled >Check-in</button>
-                            <button data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-block fa-lg gradient-custom-2 mb-3" type="button" id="checkoutBtn" disabled >Check-Out</button>
-                          </div>
+                      <div class="text-center pt-1 mb-5 pb-1" style="margin-top: 20px;">
+                        <button data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-block fa-lg gradient-custom-2 mb-3" type="button" id="checkinBtn" disabled>Check-in</button>
+                        <button data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-block fa-lg gradient-custom-2 mb-3" type="button" id="checkoutBtn" disabled>Check-Out</button>
+                    </div>
+                    
 
       
                         
@@ -45,8 +48,8 @@
                   <div class="col-lg-6 d-flex align-items-center gradient-custom-2">
                     <div class="text-white px-3 py-4 p-md-5 mx-md-4">
                       <h4 class="mb-4">User Info</h4>
-                      <p>Name:</p>
-                      <p>User Id:</p>
+                      <p>Name: user1</p>
+                      <p>User Id: 12345</p>
                     </div>
                   </div>
                 </div>
@@ -62,24 +65,22 @@
 
     <script>
         function displayDateTime() {
-         const now = new Date(); 
-         const options = { 
-         weekday: 'long', 
-         year: 'numeric', 
-         month: 'long', 
-         day: 'numeric', 
-         hour: '2-digit', 
-         minute: '2-digit', 
-         second: '2-digit' 
-        };
-       document.getElementById('datetime').textContent = now.toLocaleString('en-US', options);
-     }
+    const now = new Date();
+    const options = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    document.getElementById('datetime').textContent = now.toLocaleString('en-US', options);
+}
 
+setInterval(displayDateTime, 1000);
 
-     setInterval(displayDateTime, 1000);
+displayDateTime();
 
-
-       displayDateTime();
         // Function to get CSRF Token from the hidden input field
         const csrfToken = document.getElementById('csrf_token').value;
 
@@ -127,52 +128,66 @@
 
 
 document.getElementById("checkinBtn").onclick = () => {
-    console.log("Check-In button clicked!"); // Debugging line
-    fetch("/record_action/", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrfToken
-        },
-        body: new URLSearchParams({
-            'username': "user1",
-            'action': "check-in"
+    navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+
+        console.log("Check-In button clicked!"); // Debugging line
+        fetch("/record_action/", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: new URLSearchParams({
+                'username': "user1",
+                'action': "check-in",
+                'latitude': latitude,
+                'longitude': longitude
+            })
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data); // Debugging line
-        alert("Check-In Successful!");
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Error during Check-In");
+        .then(response => response.json())
+        .then(data => {
+            console.log(data); // Debugging line
+            alert(data.message);
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error during Check-In");
+        });
     });
 };
 
+
 document.getElementById("checkoutBtn").onclick = () => {
-    console.log("Check-Out button clicked!"); // Debugging line
-    fetch("/record_action/", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrfToken
-        },
-        body: new URLSearchParams({
-            'username': "user1",
-            'action': "check-out"
+    navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+
+        console.log("Check-Out button clicked!"); // Debugging line
+        fetch("/record_action/", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: new URLSearchParams({
+                'username': "user1",
+                'action': "check-out",
+                'latitude': latitude,
+                'longitude': longitude
+            })
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data); // Debugging line
-        alert("Check-Out Successful!");
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Error during Check-Out");
+        .then(response => response.json())
+        .then(data => {
+            console.log(data); // Debugging line
+            alert(data.message);
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error during Check-Out");
+        });
     });
 };
+
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
