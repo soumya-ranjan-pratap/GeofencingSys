@@ -85,37 +85,46 @@
 
         // Geolocation Check
         // Geolocation Check
-navigator.geolocation.getCurrentPosition((position) => {
-    const { latitude, longitude } = position.coords;
+        navigator.geolocation.getCurrentPosition(
+    (position) => {
+        const { latitude, longitude } = position.coords;
 
-    console.log("Latitude:", latitude, "Longitude:", longitude); // Debugging line
+        console.log("Latitude:", latitude, "Longitude:", longitude); // Debugging line
 
-    fetch("/check_geofence/", {
-        method: "POST",
-        headers: {
-            'X-CSRFToken': csrfToken,
-        },
-        body: new URLSearchParams({
-            'latitude': latitude,
-            'longitude': longitude
+        fetch("/check_geofence/", {
+            method: "POST",
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+            body: new URLSearchParams({
+                'latitude': latitude,
+                'longitude': longitude
+            })
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Server response:", data); // Debugging line
-        const statusElem = document.getElementById("status");
-        if (data.status === "inside") {
-            statusElem.innerText = "You are inside the geofence!";
-            document.getElementById("checkinBtn").disabled = false;
-            document.getElementById("checkoutBtn").disabled = false;
-        } else {
-            statusElem.innerText = "You are outside the geofence.";
-        }
-    });
-}, (error) => {
-    console.error("Error getting location:", error.message); // Debugging line
-    document.getElementById("status").innerText = "Failed to get location: " + error.message;
-});
+        .then(response => response.json())
+        .then(data => {
+            console.log("Server response:", data); // Debugging line
+            const statusElem = document.getElementById("status");
+            if (data.status === "inside") {
+                statusElem.innerText = "You are inside the geofence!";
+                document.getElementById("checkinBtn").disabled = false;
+                document.getElementById("checkoutBtn").disabled = false;
+            } else {
+                statusElem.innerText = "You are outside the geofence.";
+            }
+        });
+    },
+    (error) => {
+        console.error("Error getting location:", error.message); // Debugging line
+        document.getElementById("status").innerText = "Failed to get location: " + error.message;
+    },
+    {
+        enableHighAccuracy: true, // Request high-accuracy geolocation
+        timeout: 10000,          // Maximum time (in ms) to wait for location
+        maximumAge: 0            // Do not use a cached location
+    }
+);
+
 
 document.getElementById("checkinBtn").onclick = () => {
     console.log("Check-In button clicked!"); // Debugging line
