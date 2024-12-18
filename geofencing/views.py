@@ -9,7 +9,7 @@ from .models import CheckInOut
 from datetime import datetime
 
 GEOFENCE_COORDS = (20.302151990678386, 85.85592923839228)  # Example coordinates (latitude, longitude)
-GEOFENCE_RADIUS = 1.0  # 1000 meters
+GEOFENCE_RADIUS = 0.2  # 1000 meters
 
 def index(request):
     return render(request, 'geofencing/index.html')
