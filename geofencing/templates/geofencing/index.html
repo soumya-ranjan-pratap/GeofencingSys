@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geofencing System</title>
+    {% load static %} <!-- For static files -->
+    <!-- <link rel="stylesheet" href="{% static 'main.css' %}"> -->
+</head>
+<body>
+    <div class="container">
+        <h1>Geofencing System</h1>
+        <p id="status">Checking location...</p>
+
+        <button id="checkinBtn" disabled>Check-In</button>
+        <button id="checkoutBtn" disabled>Check-Out</button>
+
+        <!-- Hidden input for CSRF Token -->
+        <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+    </div>
+
+    <script>
+        // Function to get CSRF Token from the hidden input field
+        const csrfToken = document.getElementById('csrf_token').value;
+
+        // Geolocation Check
+        // Geolocation Check
+navigator.geolocation.getCurrentPosition((position) => {
+    const { latitude, longitude } = position.coords;
+
+    console.log("Latitude:", latitude, "Longitude:", longitude); // Debugging line
+
+    fetch("/check_geofence/", {
+        method: "POST",
+        headers: {
+            'X-CSRFToken': csrfToken,
+        },
+        body: new URLSearchParams({
+            'latitude': latitude,
+            'longitude': longitude
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Server response:", data); // Debugging line
+        const statusElem = document.getElementById("status");
+        if (data.status === "inside") {
+            statusElem.innerText = "You are inside the geofence!";
+            document.getElementById("checkinBtn").disabled = false;
+            document.getElementById("checkoutBtn").disabled = false;
+        } else {
+            statusElem.innerText = "You are outside the geofence.";
+        }
+    });
+}, (error) => {
+    console.error("Error getting location:", error.message); // Debugging line
+    document.getElementById("status").innerText = "Failed to get location: " + error.message;
+});
+
+document.getElementById("checkinBtn").onclick = () => {
+    console.log("Check-In button clicked!"); // Debugging line
+    fetch("/record_action/", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'username': "user1",
+            'action': "check-in"
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data); // Debugging line
+        alert("Check-In Successful!");
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Error during Check-In");
+    });
+};
+
+document.getElementById("checkoutBtn").onclick = () => {
+    console.log("Check-Out button clicked!"); // Debugging line
+    fetch("/record_action/", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'username': "user1",
+            'action': "check-out"
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data); // Debugging line
+        alert("Check-Out Successful!");
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Error during Check-Out");
+    });
+};
+
+    </script>
+</body>
+</html>
