@@ -48,8 +48,12 @@
                   <div class="col-lg-6 d-flex align-items-center gradient-custom-2">
                     <div class="text-white px-3 py-4 p-md-5 mx-md-4">
                       <h4 class="mb-4">User Info</h4>
-                      <p>Name: user1</p>
-                      <p>User Id: 12345</p>
+                      <p>Name: {{user.username}}</p>
+                      <p>User Id: {{user.id}}</p>
+                      <div class="text-center pt-1 mb-5 pb-1" style="margin-top: 20px;">
+                        <button data-mdb-button-init data-mdb-ripple-init class="btn btn-danger btn-block fa-lg gradient-custom-2 mb-3" type="button" id="logoutBtn">Logout</button>
+                      </div>
+                    
                     </div>
                   </div>
                 </div>
@@ -83,111 +87,129 @@ displayDateTime();
 
         // Function to get CSRF Token from the hidden input field
         const csrfToken = document.getElementById('csrf_token').value;
+        
+    const currentUsername = "{{ user.username }}";  // This is injected from Django template
 
-        // Geolocation Check
-        // Geolocation Check
-        navigator.geolocation.getCurrentPosition(
-    (position) => {
-        const { latitude, longitude } = position.coords;
+    // Geolocation Check
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
 
-        console.log("Latitude:", latitude, "Longitude:", longitude); // Debugging line
+            console.log("Latitude:", latitude, "Longitude:", longitude); // Debugging line
 
-        fetch("/check_geofence/", {
+            fetch("/check_geofence/", {
+                method: "POST",
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
+                body: new URLSearchParams({
+                    'latitude': latitude,
+                    'longitude': longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Server response:", data); // Debugging line
+                const statusElem = document.getElementById("status");
+                if (data.status === "inside") {
+                    statusElem.innerText = "You are inside the geofence!";
+                    document.getElementById("checkinBtn").disabled = false;
+                    document.getElementById("checkoutBtn").disabled = false;
+                } else {
+                    statusElem.innerText = "You are outside the geofence.";
+                }
+            });
+        },
+        (error) => {
+            console.error("Error getting location:", error.message); // Debugging line
+            document.getElementById("status").innerText = "Failed to get location: " + error.message;
+        },
+        {
+            enableHighAccuracy: true, // Request high-accuracy geolocation
+            timeout: 10000,          // Maximum time (in ms) to wait for location
+            maximumAge: 0            // Do not use a cached location
+        }
+    );
+
+    document.getElementById("checkinBtn").onclick = () => {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const { latitude, longitude } = position.coords;
+
+            console.log("Check-In button clicked!"); // Debugging line
+            fetch("/record_action/", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams({
+                    'username': currentUsername,  // Use dynamic username
+                    'action': "check-in",
+                    'latitude': latitude,
+                    'longitude': longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data); // Debugging line
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error during Check-In");
+            });
+        });
+    };
+
+    document.getElementById("checkoutBtn").onclick = () => {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const { latitude, longitude } = position.coords;
+
+            console.log("Check-Out button clicked!"); // Debugging line
+            fetch("/record_action/", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams({
+                    'username': currentUsername,  // Use dynamic username
+                    'action': "check-out",
+                    'latitude': latitude,
+                    'longitude': longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data); // Debugging line
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error during Check-Out");
+            });
+        });
+    };
+
+    document.getElementById("logoutBtn").onclick = () => {
+        fetch("/logout/", {
             method: "POST",
             headers: {
-                'X-CSRFToken': csrfToken,
-            },
-            body: new URLSearchParams({
-                'latitude': latitude,
-                'longitude': longitude
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Server response:", data); // Debugging line
-            const statusElem = document.getElementById("status");
-            if (data.status === "inside") {
-                statusElem.innerText = "You are inside the geofence!";
-                document.getElementById("checkinBtn").disabled = false;
-                document.getElementById("checkoutBtn").disabled = false;
-            } else {
-                statusElem.innerText = "You are outside the geofence.";
+                'X-CSRFToken': csrfToken
             }
-        });
-    },
-    (error) => {
-        console.error("Error getting location:", error.message); // Debugging line
-        document.getElementById("status").innerText = "Failed to get location: " + error.message;
-    },
-    {
-        enableHighAccuracy: true, // Request high-accuracy geolocation
-        timeout: 10000,          // Maximum time (in ms) to wait for location
-        maximumAge: 0            // Do not use a cached location
-    }
-);
-
-
-document.getElementById("checkinBtn").onclick = () => {
-    navigator.geolocation.getCurrentPosition((position) => {
-        const { latitude, longitude } = position.coords;
-
-        console.log("Check-In button clicked!"); // Debugging line
-        fetch("/record_action/", {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken
-            },
-            body: new URLSearchParams({
-                'username': "user1",
-                'action': "check-in",
-                'latitude': latitude,
-                'longitude': longitude
-            })
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data); // Debugging line
-            alert(data.message);
+        .then(response => {
+            if (response.ok) {
+                window.location.href = '/login/';  // Now this correctly redirects
+            } else {
+                alert("Error logging out");
+            }
         })
         .catch(error => {
             console.error("Error:", error);
-            alert("Error during Check-In");
+            alert("Error during logout");
         });
-    });
-};
-
-
-document.getElementById("checkoutBtn").onclick = () => {
-    navigator.geolocation.getCurrentPosition((position) => {
-        const { latitude, longitude } = position.coords;
-
-        console.log("Check-Out button clicked!"); // Debugging line
-        fetch("/record_action/", {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken
-            },
-            body: new URLSearchParams({
-                'username': "user1",
-                'action': "check-out",
-                'latitude': latitude,
-                'longitude': longitude
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data); // Debugging line
-            alert(data.message);
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("Error during Check-Out");
-        });
-    });
-};
-
+    };
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>

@@ -14,11 +14,17 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.contrib import admin
 from django.urls import path
 from geofencing import views
+from django.shortcuts import redirect
 
 urlpatterns = [
-    path('', views.index, name='index'),
+    path('admin/', admin.site.urls),  
+    path('', views.login_view, name='login'),  # Root URL redirects to login page
+    path('login/', views.login_view, name='login'),
+    path('index/', views.index, name='index'), 
     path('check_geofence/', views.check_geofence, name='check_geofence'),
     path('record_action/', views.record_action, name='record_action'),
+    path('logout/', views.logout_view, name='logout'),
 ]
